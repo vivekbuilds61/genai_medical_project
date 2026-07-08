@@ -1,0 +1,47 @@
+name: CI Pipeline — GenAI Medical Imaging
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install pytest numpy pandas scipy scikit-learn pyyaml tqdm
+          pip install rdkit-pypi medmnist
+
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Check code style
+        run: |
+          pip install flake8
+          flake8 src/ --max-line-length=110 --ignore=E501,W503
+
+  badge:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Tests passed ✓
+        run: echo "All tests passed — pipeline is healthy"

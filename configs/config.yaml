@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────
+#  GenAI Medical Imaging & Drug Discovery
+#  Central Configuration
+# ─────────────────────────────────────────────
+
+project:
+  name: "GenAI Medical Imaging & Drug Discovery"
+  author: "Vivek Nagappa"
+  version: "1.0.0"
+  seed: 42
+
+paths:
+  data_raw: "data/raw"
+  data_processed: "data/processed"
+  data_synthetic: "data/synthetic"
+  models_gan: "models/gan"
+  models_cnn: "models/cnn"
+  models_saved: "models/saved"
+
+data:
+  image_size: 64          # Resize all images to 64x64
+  num_classes: 9          # PathMNIST has 9 classes
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  batch_size: 64
+  num_workers: 2
+  normalize_mean: [0.5, 0.5, 0.5]
+  normalize_std:  [0.5, 0.5, 0.5]
+
+gan:
+  latent_dim: 128         # Noise vector size
+  num_epochs: 100
+  lr_generator: 0.0002
+  lr_discriminator: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  n_critic: 1             # Train discriminator n times per generator step
+  save_every: 10          # Save checkpoint every N epochs
+  sample_every: 5         # Generate sample grid every N epochs
+  num_synthetic: 5000     # Total synthetic images to generate after training
+  label_smoothing: 0.1
+
+cnn:
+  backbone: "resnet18"    # resnet18 | efficientnet | custom
+  num_epochs: 30
+  lr: 0.001
+  weight_decay: 0.0001
+  dropout: 0.4
+  feature_dim: 256        # Output feature vector size (biomarker vector)
+  scheduler: "cosine"
+  augmentation: true
+
+molecular:
+  num_molecules: 200      # Molecules from ChEMBL subset
+  descriptor_type: "morgan"  # morgan | maccs | rdkit
+  morgan_radius: 2
+  morgan_bits: 2048
+  correlation_method: "pearson"   # pearson | spearman
+  top_k_candidates: 10    # Return top K drug candidates
+
+streamlit:
+  title: "GenAI Medical Imaging & Drug Discovery"
+  theme: "dark"
+  max_upload_size_mb: 5
