@@ -201,8 +201,11 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
     ax.invert_yaxis()
     ax.grid(True, axis="x", ls="--", lw=0.5)
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    if save_path:
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+plt.show()
+plt.close()
 
 
 # ── 7. Multi-class drug heatmap ───────────────────────────────────────────────
