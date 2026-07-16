@@ -38,9 +38,10 @@ class DrugCorrelator:
 
     def __init__(self, config):
         mc = config["molecular"]
-        self.correlation_method = mc["correlation_method"]   # pearson | spearman
-        self.top_k              = mc["top_k_candidates"]
-        self.n_pca_components   = 20    # Reduce both spaces to 20 dims before correlation
+        # pearson | spearman
+        self.correlation_method = mc["correlation_method"]
+        self.top_k = mc["top_k_candidates"]
+        self.n_pca_components = 20    # Reduce both spaces to 20 dims before correlation
 
     # ── Step 1: Prepare biomarker matrix ──────────────────────────────────────
     def prepare_biomarkers(self, features: np.ndarray, labels: np.ndarray):
@@ -52,7 +53,8 @@ class DrugCorrelator:
         for cls in np.unique(labels):
             mask = labels == cls
             class_profiles[int(cls)] = features[mask].mean(axis=0)
-        print(f"[Correlator] Computed mean biomarker profiles for {len(class_profiles)} classes.")
+        print(
+            f"[Correlator] Computed mean biomarker profiles for {len(class_profiles)} classes.")
         return class_profiles
 
     # ── Step 2: Prepare molecular descriptor matrix ───────────────────────────
@@ -61,14 +63,16 @@ class DrugCorrelator:
         Stack all molecular descriptor vectors into a (N_mols, D) matrix.
         Returns: descriptor_matrix (N_mols, D_reduced), mol_df with index
         """
-        desc_matrix = np.vstack(mol_df["descriptors"].values).astype(np.float32)
+        desc_matrix = np.vstack(
+            mol_df["descriptors"].values).astype(np.float32)
 
         # Standardise
         scaler = StandardScaler()
         desc_matrix_scaled = scaler.fit_transform(desc_matrix)
 
         # PCA to reduce high-dim Morgan fingerprints → manageable size
-        n_components = min(self.n_pca_components, desc_matrix_scaled.shape[0] - 1, desc_matrix_scaled.shape[1])
+        n_components = min(
+            self.n_pca_components, desc_matrix_scaled.shape[0] - 1, desc_matrix_scaled.shape[1])
         pca = PCA(n_components=n_components, random_state=42)
         desc_reduced = pca.fit_transform(desc_matrix_scaled)
 
@@ -90,7 +94,7 @@ class DrugCorrelator:
         # Reduce biomarker vector to same n_pca_components via projection
         n_mol_dims = mol_matrix.shape[1]
         bm_reduced = biomarker_vec[:n_mol_dims] if len(biomarker_vec) >= n_mol_dims else \
-                     np.pad(biomarker_vec, (0, n_mol_dims - len(biomarker_vec)))
+            np.pad(biomarker_vec, (0, n_mol_dims - len(biomarker_vec)))
 
         scores = []
         for mol_vec in mol_matrix:
@@ -122,17 +126,19 @@ class DrugCorrelator:
 
             # Build results table
             ranking = mol_df.copy()
-            ranking["correlation"]    = corr_scores
-            ranking["abs_corr"]       = np.abs(corr_scores)
-            ranking["p_value"]        = p_values
-            ranking["significant"]    = p_values < 0.05
-            ranking["disease_class"]  = class_name
+            ranking["correlation"] = corr_scores
+            ranking["abs_corr"] = np.abs(corr_scores)
+            ranking["p_value"] = p_values
+            ranking["significant"] = p_values < 0.05
+            ranking["disease_class"] = class_name
 
             # Sort by absolute correlation descending
-            ranking = ranking.sort_values("abs_corr", ascending=False).reset_index(drop=True)
+            ranking = ranking.sort_values(
+                "abs_corr", ascending=False).reset_index(drop=True)
 
             # Keep only top-K, drop the raw descriptor column
-            top_k = ranking.head(self.top_k).drop(columns=["descriptors"], errors="ignore")
+            top_k = ranking.head(self.top_k).drop(
+                columns=["descriptors"], errors="ignore")
             results[class_name] = top_k
 
             top1 = top_k.iloc[0]
@@ -169,7 +175,8 @@ class DrugCorrelator:
 
         # 3 & 4. Correlate and rank
         print("\n[DrugCorrelator] Ranking candidates per disease class:\n")
-        results = self.rank_candidates(class_profiles, mol_df, mol_matrix_reduced)
+        results = self.rank_candidates(
+            class_profiles, mol_df, mol_matrix_reduced)
 
         print("\n[DrugCorrelator] Analysis complete.")
         return results

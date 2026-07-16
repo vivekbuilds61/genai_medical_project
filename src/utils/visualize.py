@@ -1,4 +1,14 @@
-
+"""
+visualize.py
+────────────
+All visualisation utilities for the pipeline:
+  - GAN training loss curves
+  - Synthetic image grids
+  - CNN training curves + confusion matrix
+  - Biomarker feature t-SNE / UMAP
+  - Drug candidate bar charts
+  - Molecular structure rendering
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,11 +51,14 @@ plt.rcParams.update({
 })
 
 
+# ── 1. GAN Loss Curves ────────────────────────────────────────────────────────
 def plot_gan_losses(history: dict, save_path=None):
     fig, ax = plt.subplots(figsize=(10, 4))
     epochs = range(1, len(history["g_loss"]) + 1)
-    ax.plot(epochs, history["g_loss"], color=PALETTE[0], lw=2, label="Generator Loss")
-    ax.plot(epochs, history["d_loss"], color=PALETTE[1], lw=2, label="Discriminator Loss")
+    ax.plot(epochs, history["g_loss"], color=PALETTE[0],
+            lw=2, label="Generator Loss")
+    ax.plot(epochs, history["d_loss"], color=PALETTE[1],
+            lw=2, label="Discriminator Loss")
     ax.fill_between(epochs, history["g_loss"], alpha=0.08, color=PALETTE[0])
     ax.fill_between(epochs, history["d_loss"], alpha=0.08, color=PALETTE[1])
     ax.set_title("cGAN Training Loss", fontsize=14, color="#e8edf2", pad=12)
@@ -95,20 +108,25 @@ def plot_cnn_training(history: dict, save_path=None):
     epochs = range(1, len(history["train_loss"]) + 1)
 
     # Loss
-    ax1.plot(epochs, history["train_loss"], color=PALETTE[0], lw=2, label="Train")
-    ax1.plot(epochs, history["val_loss"],   color=PALETTE[1], lw=2, label="Val", ls="--")
+    ax1.plot(epochs, history["train_loss"],
+             color=PALETTE[0], lw=2, label="Train")
+    ax1.plot(epochs, history["val_loss"],
+             color=PALETTE[1], lw=2, label="Val", ls="--")
     ax1.set_title("Loss", fontsize=12, color="#e8edf2")
     ax1.set_xlabel("Epoch");  ax1.set_ylabel("Cross-Entropy Loss")
     ax1.legend(framealpha=0.2);  ax1.grid(True, ls="--", lw=0.5)
 
     # Accuracy
-    ax2.plot(epochs, [a * 100 for a in history["train_acc"]], color=PALETTE[0], lw=2, label="Train")
-    ax2.plot(epochs, [a * 100 for a in history["val_acc"]],   color=PALETTE[1], lw=2, label="Val", ls="--")
+    ax2.plot(epochs, [a * 100 for a in history["train_acc"]],
+             color=PALETTE[0], lw=2, label="Train")
+    ax2.plot(epochs, [a * 100 for a in history["val_acc"]],
+             color=PALETTE[1], lw=2, label="Val", ls="--")
     ax2.set_title("Accuracy", fontsize=12, color="#e8edf2")
     ax2.set_xlabel("Epoch");  ax2.set_ylabel("Accuracy (%)")
     ax2.legend(framealpha=0.2);  ax2.grid(True, ls="--", lw=0.5)
 
-    fig.suptitle("CNN Classifier Training Curves", fontsize=13, color="#e8edf2")
+    fig.suptitle("CNN Classifier Training Curves",
+                 fontsize=13, color="#e8edf2")
     plt.tight_layout()
     if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.show();  plt.close()
@@ -129,7 +147,8 @@ def plot_confusion_matrix(cm: np.ndarray, class_names=None, save_path=None):
                 cbar_kws={"shrink": 0.8})
     ax.set_xlabel("Predicted Label", fontsize=11)
     ax.set_ylabel("True Label",      fontsize=11)
-    ax.set_title("CNN Confusion Matrix (Normalised)", fontsize=13, color="#e8edf2", pad=12)
+    ax.set_title("CNN Confusion Matrix (Normalised)",
+                 fontsize=13, color="#e8edf2", pad=12)
     plt.xticks(rotation=45, ha="right", fontsize=8)
     plt.yticks(rotation=0,  fontsize=8)
     plt.tight_layout()
@@ -144,15 +163,18 @@ def plot_tsne(features: np.ndarray, labels: np.ndarray,
 
     # PCA first to speed up t-SNE
     n_pca = min(50, features.shape[1], features.shape[0] - 1)
-    pca_feats = PCA(n_components=n_pca, random_state=42).fit_transform(features)
+    pca_feats = PCA(n_components=n_pca,
+                    random_state=42).fit_transform(features)
 
-    tsne = TSNE(n_components=2, perplexity=40, n_iter=1000, random_state=42, verbose=0)
-    emb  = tsne.fit_transform(pca_feats)
+    tsne = TSNE(n_components=2, perplexity=40,
+                n_iter=1000, random_state=42, verbose=0)
+    emb = tsne.fit_transform(pca_feats)
 
     fig, ax = plt.subplots(figsize=(10, 8))
     for cls_idx in np.unique(labels):
         mask = labels == cls_idx
-        label_name = PATHMNIST_CLASSES[cls_idx] if cls_idx < len(PATHMNIST_CLASSES) else str(cls_idx)
+        label_name = PATHMNIST_CLASSES[cls_idx] if cls_idx < len(
+            PATHMNIST_CLASSES) else str(cls_idx)
         ax.scatter(emb[mask, 0], emb[mask, 1],
                    c=PALETTE[cls_idx % len(PALETTE)],
                    label=label_name, alpha=0.6, s=18, edgecolors="none")
@@ -176,7 +198,8 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
 
     fig, ax = plt.subplots(figsize=(10, 5))
     colors = [PALETTE[0] if r > 0 else PALETTE[2] for r in df["correlation"]]
-    bars   = ax.barh(df["name"], df["abs_corr"], color=colors, edgecolor="none", height=0.6)
+    bars = ax.barh(df["name"], df["abs_corr"], color=colors,
+                   edgecolor="none", height=0.6)
 
     # Annotate with correlation value
     for bar, (_, row) in zip(bars, df.iterrows()):
@@ -185,16 +208,19 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
                 va="center", fontsize=8.5, color="#e8edf2")
 
     ax.set_xlim(0, df["abs_corr"].max() + 0.12)
-    ax.set_title(f"Top Drug Candidates — {class_name}", fontsize=13, color="#e8edf2", pad=12)
+    ax.set_title(
+        f"Top Drug Candidates — {class_name}", fontsize=13, color="#e8edf2", pad=12)
     ax.set_xlabel("|Pearson Correlation|")
     ax.invert_yaxis()
     ax.grid(True, axis="x", ls="--", lw=0.5)
     plt.tight_layout()
-    if save_path:
-    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+   if save_path:
 
-plt.show()
-plt.close()
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    
+
+   plt.show()
+   plt.close()
 
 
 # ──

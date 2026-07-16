@@ -85,15 +85,22 @@ def get_dataloaders(config_path="configs/config.yaml", download=True):
     cfg = load_config(config_path)
     dc = cfg["data"]
 
-    train_ds = MedicalImageDataset("train", dc["image_size"], augment=dc["augmentation"] if "augmentation" in dc else True, download=download, data_root=cfg["paths"]["data_raw"])
-    val_ds   = MedicalImageDataset("val",   dc["image_size"], augment=False, download=download, data_root=cfg["paths"]["data_raw"])
-    test_ds  = MedicalImageDataset("test",  dc["image_size"], augment=False, download=download, data_root=cfg["paths"]["data_raw"])
+    train_ds = MedicalImageDataset("train", dc["image_size"], augment=dc["augmentation"]
+                                   if "augmentation" in dc else True, download=download, data_root=cfg["paths"]["data_raw"])
+    val_ds = MedicalImageDataset(
+        "val",   dc["image_size"], augment=False, download=download, data_root=cfg["paths"]["data_raw"])
+    test_ds = MedicalImageDataset(
+        "test",  dc["image_size"], augment=False, download=download, data_root=cfg["paths"]["data_raw"])
 
-    train_loader = DataLoader(train_ds, batch_size=dc["batch_size"], shuffle=True,  num_workers=dc["num_workers"], pin_memory=True)
-    val_loader   = DataLoader(val_ds,   batch_size=dc["batch_size"], shuffle=False, num_workers=dc["num_workers"])
-    test_loader  = DataLoader(test_ds,  batch_size=dc["batch_size"], shuffle=False, num_workers=dc["num_workers"])
+    train_loader = DataLoader(
+        train_ds, batch_size=dc["batch_size"], shuffle=True,  num_workers=dc["num_workers"], pin_memory=True)
+    val_loader = DataLoader(
+        val_ds,   batch_size=dc["batch_size"], shuffle=False, num_workers=dc["num_workers"])
+    test_loader = DataLoader(
+        test_ds,  batch_size=dc["batch_size"], shuffle=False, num_workers=dc["num_workers"])
 
-    print(f"[Dataset] Train: {len(train_ds)} | Val: {len(val_ds)} | Test: {len(test_ds)}")
+    print(
+        f"[Dataset] Train: {len(train_ds)} | Val: {len(val_ds)} | Test: {len(test_ds)}")
     return train_loader, val_loader, test_loader
 
 
@@ -102,7 +109,8 @@ class SyntheticImageDataset(Dataset):
     """Loads GAN-generated synthetic images saved as .npy arrays."""
 
     def __init__(self, images_path, labels_path, transform=None):
-        self.images = np.load(images_path)   # Shape: (N, 3, H, W) float32 in [-1, 1]
+        # Shape: (N, 3, H, W) float32 in [-1, 1]
+        self.images = np.load(images_path)
         self.labels = np.load(labels_path)   # Shape: (N,) int
         self.transform = transform
 
@@ -122,26 +130,41 @@ class SyntheticImageDataset(Dataset):
 # In a real project these would come from ChEMBL / PubChem APIs.
 CURATED_MOLECULES = [
     # (name, SMILES, target, bioactivity_IC50_nM)
-    ("Ibuprofen",     "CC(C)Cc1ccc(cc1)C(C)C(=O)O",                        "COX-2",     13000),
-    ("Aspirin",       "CC(=O)Oc1ccccc1C(=O)O",                              "COX-1",     50000),
-    ("Metformin",     "CN(C)C(=N)NC(=N)N",                                  "AMPK",       1200),
-    ("Erlotinib",     "C#Cc1cccc(Nc2ncnc3cc(OCC)c(OCC)cc23)c1",             "EGFR",         2),
+    ("Ibuprofen",     "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+     "COX-2",     13000),
+    ("Aspirin",       "CC(=O)Oc1ccccc1C(=O)O",
+     "COX-1",     50000),
+    ("Metformin",     "CN(C)C(=N)NC(=N)N",
+     "AMPK",       1200),
+    ("Erlotinib",     "C#Cc1cccc(Nc2ncnc3cc(OCC)c(OCC)cc23)c1",
+     "EGFR",         2),
     ("Imatinib",      "Cc1ccc(NC(=O)c2ccc(CN3CCN(C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1", "BCR-ABL", 100),
-    ("Gefitinib",     "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1",    "EGFR",         33),
-    ("Sorafenib",     "CNC(=O)c1cc(Oc2ccc(NC(=O)Nc3ccc(Cl)c(C(F)(F)F)c3)cc2)ccn1","RAF",  10),
-    ("Vemurafenib",   "CCCS(=O)(=O)Nc1ccc(F)c(C(=O)c2c[nH]c3cc(ccc23)-c2ccc(Cl)cc2)c1","BRAF", 31),
-    ("Tamoxifen",     "CCC(=C(c1ccccc1)c1ccc(OCCN(C)C)cc1)c1ccccc1",       "ESR1",       3400),
+    ("Gefitinib",     "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1",
+     "EGFR",         33),
+    ("Sorafenib",     "CNC(=O)c1cc(Oc2ccc(NC(=O)Nc3ccc(Cl)c(C(F)(F)F)c3)cc2)ccn1", "RAF",  10),
+    ("Vemurafenib",
+     "CCCS(=O)(=O)Nc1ccc(F)c(C(=O)c2c[nH]c3cc(ccc23)-c2ccc(Cl)cc2)c1", "BRAF", 31),
+    ("Tamoxifen",     "CCC(=C(c1ccccc1)c1ccc(OCCN(C)C)cc1)c1ccccc1",
+     "ESR1",       3400),
     ("Doxorubicin",   "COc1cccc2C(=O)c3c(O)c4C(O)(CC(O)(CC(=O)CO)c4c(O)c3=O)c21", "TOP2A", 200),
-    ("Methotrexate",  "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O","DHFR", 5),
-    ("Cisplatin",     "[NH3][Pt]([NH3])(Cl)Cl",                             "DNA",        3000),
-    ("Paclitaxel",    "O=C(O[C@@H]1C[C@]2(OC(=O)c3ccccc3)[C@@H](O)C[C@@H](O)[C@H]3[C@H](OC(=O)[C@@H](O)[C@@H](NC(=O)c4ccccc4)[C@@H](O)c4ccccc4)C(=O)[C@@](C)(O)[C@@H]3[C@@H]2OC(C)=O)c1C","Tubulin", 3),
-    ("Carboplatin",   "O=C1OC(=O)[C@H]2CCCCC[Pt]12",                       "DNA",        1000),
-    ("Vincristine",   "CCC1(CC)C=C2CN3CCc4cc5c(cc4[C@@H]3C[C@H]2C1)OC(=O)c1[nH]cc(CC)c1CC", "Tubulin", 50),
-    ("Thalidomide",   "O=C1CCC(N2C(=O)c3ccccc3C2=O)C(=O)N1",               "CRBN",       100),
-    ("Bortezomib",    "CC(C)C[C@@H](NC(=O)[C@@H](Cc1cccnc1)NC(=O)c1cnccn1)B(O)O", "26S-Proteasome", 0.6),
-    ("Lenalidomide",  "O=C1CCC(N2C(=O)c3cccc(N)c3C2=O)C(=O)N1",            "CRBN",       1000),
-    ("Ibrutinib",     "O=C(/C=C/c1ccccc1)N1CCC[C@@H]1c1ncnc2[nH]ccc12",   "BTK",          0.5),
-    ("Ruxolitinib",   "C[C@@H](Cc1cncn1C)Nc1ncnc2[nH]cc(-c3ccncc3)c12",    "JAK1/2",      3.3),
+    ("Methotrexate",  "CN(Cc1cnc2nc(N)nc(N)c2n1)c1ccc(cc1)C(=O)NC(CCC(=O)O)C(=O)O", "DHFR", 5),
+    ("Cisplatin",     "[NH3][Pt]([NH3])(Cl)Cl",
+     "DNA",        3000),
+    ("Paclitaxel",    "O=C(O[C@@H]1C[C@]2(OC(=O)c3ccccc3)[C@@H](O)C[C@@H](O)[C@H]3[C@H](OC(=O)[C@@H](O)[C@@H](NC(=O)c4ccccc4)[C@@H](O)c4ccccc4)C(=O)[C@@](C)(O)[C@@H]3[C@@H]2OC(C)=O)c1C", "Tubulin", 3),
+    ("Carboplatin",   "O=C1OC(=O)[C@H]2CCCCC[Pt]12",
+     "DNA",        1000),
+    ("Vincristine",
+     "CCC1(CC)C=C2CN3CCc4cc5c(cc4[C@@H]3C[C@H]2C1)OC(=O)c1[nH]cc(CC)c1CC", "Tubulin", 50),
+    ("Thalidomide",   "O=C1CCC(N2C(=O)c3ccccc3C2=O)C(=O)N1",
+     "CRBN",       100),
+    ("Bortezomib",
+     "CC(C)C[C@@H](NC(=O)[C@@H](Cc1cccnc1)NC(=O)c1cnccn1)B(O)O", "26S-Proteasome", 0.6),
+    ("Lenalidomide",  "O=C1CCC(N2C(=O)c3cccc(N)c3C2=O)C(=O)N1",
+     "CRBN",       1000),
+    ("Ibrutinib",
+     "O=C(/C=C/c1ccccc1)N1CCC[C@@H]1c1ncnc2[nH]ccc12",   "BTK",          0.5),
+    ("Ruxolitinib",
+     "C[C@@H](Cc1cncn1C)Nc1ncnc2[nH]cc(-c3ccncc3)c12",    "JAK1/2",      3.3),
 ]
 
 
@@ -163,7 +186,8 @@ class MolecularDataset:
             return None
 
         if self.descriptor_type == "morgan":
-            fp = AllChem.GetMorganFingerprintAsBitVect(mol, self.morgan_radius, self.morgan_bits)
+            fp = AllChem.GetMorganFingerprintAsBitVect(
+                mol, self.morgan_radius, self.morgan_bits)
             return np.array(fp)
         elif self.descriptor_type == "rdkit":
             desc_names = [d[0] for d in Descriptors.descList[:50]]
@@ -195,5 +219,6 @@ class MolecularDataset:
                     "descriptors": desc
                 })
         df = pd.DataFrame(records)
-        print(f"[Molecular] Loaded {len(df)} molecules with {len(df.iloc[0]['descriptors'])}-dim descriptors")
+        print(
+            f"[Molecular] Loaded {len(df)} molecules with {len(df.iloc[0]['descriptors'])}-dim descriptors")
         return df

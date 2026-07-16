@@ -34,7 +34,8 @@ class CNNEncoder(nn.Module):
         backbone = tv_models.resnet18(weights=weights)
 
         # Remove the final FC layer — keep everything up to avgpool
-        self.backbone = nn.Sequential(*list(backbone.children())[:-1])  # Output: (B, 512, 1, 1)
+        self.backbone = nn.Sequential(
+            *list(backbone.children())[:-1])  # Output: (B, 512, 1, 1)
 
         # Biomarker feature head — maps 512 → 256
         self.feature_head = nn.Sequential(
@@ -63,8 +64,8 @@ class CNNEncoder(nn.Module):
             features (optional): (B, feature_dim)
         """
         backbone_out = self.backbone(x)          # (B, 512, 1, 1)
-        features     = self.feature_head(backbone_out)  # (B, 256)
-        logits       = self.classifier(features)        # (B, 9)
+        features = self.feature_head(backbone_out)  # (B, 256)
+        logits = self.classifier(features)        # (B, 9)
 
         if return_features:
             return logits, features
@@ -74,7 +75,7 @@ class CNNEncoder(nn.Module):
         """Convenience: return only the 256-dim biomarker vector."""
         with torch.no_grad():
             backbone_out = self.backbone(x)
-            features     = self.feature_head(backbone_out)
+            features = self.feature_head(backbone_out)
         return features
 
 
@@ -87,8 +88,9 @@ class CNNTrainer:
     """
 
     def __init__(self, config, device=None):
-        self.cfg    = config
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.cfg = config
+        self.device = device or (
+            "cuda" if torch.cuda.is_available() else "cpu")
         print(f"[CNN] Using device: {self.device}")
 
         cc = config["cnn"]
@@ -96,25 +98,27 @@ class CNNTrainer:
 
         self.num_classes = dc["num_classes"]
         self.feature_dim = cc["feature_dim"]
-        self.epochs      = cc["num_epochs"]
+        self.epochs = cc["num_epochs"]
 
         self.model = CNNEncoder(
-            num_classes  = self.num_classes,
-            feature_dim  = self.feature_dim,
-            dropout      = cc["dropout"],
-            pretrained   = True
+            num_classes=self.num_classes,
+            feature_dim=self.feature_dim,
+            dropout=cc["dropout"],
+            pretrained=True
         ).to(self.device)
 
         self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
         self.optimizer = optim.AdamW(
             self.model.parameters(),
-            lr           = cc["lr"],
-            weight_decay = cc["weight_decay"]
+            lr=cc["lr"],
+            weight_decay=cc["weight_decay"]
         )
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=self.epochs, eta_min=1e-6)
+        self.scheduler = CosineAnnealingLR(
+            self.optimizer, T_max=self.epochs, eta_min=1e-6)
 
-        self.history   = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
-        self.best_acc  = 0.0
+        self.history = {"train_loss": [], "val_loss": [],
+                        "train_acc": [], "val_acc": []}
+        self.best_acc = 0.0
 
         os.makedirs(config["paths"]["models_cnn"], exist_ok=True)
 
@@ -131,7 +135,7 @@ class CNNTrainer:
                     self.optimizer.zero_grad()
 
                 logits = self.model(imgs)
-                loss   = self.criterion(logits, labels)
+                loss = self.criterion(logits, labels)
 
                 if training:
                     loss.backward()
@@ -139,9 +143,9 @@ class CNNTrainer:
                     self.optimizer.step()
 
                 total_loss += loss.item() * imgs.size(0)
-                preds       = logits.argmax(dim=1)
-                correct    += (preds == labels).sum().item()
-                total      += imgs.size(0)
+                preds = logits.argmax(dim=1)
+                correct += (preds == labels).sum().item()
+                total += imgs.size(0)
 
         return total_loss / total, correct / total
 
@@ -192,19 +196,20 @@ class CNNTrainer:
 
         with torch.no_grad():
             for imgs, labels in tqdm(test_loader, desc="Evaluating", leave=False):
-                imgs   = imgs.to(self.device)
+                imgs = imgs.to(self.device)
                 logits = self.model(imgs)
-                preds  = logits.argmax(dim=1).cpu().numpy()
+                preds = logits.argmax(dim=1).cpu().numpy()
                 all_preds.extend(preds)
                 all_labels.extend(labels.numpy())
 
-        all_preds  = np.array(all_preds)
+        all_preds = np.array(all_preds)
         all_labels = np.array(all_labels)
-        accuracy   = (all_preds == all_labels).mean()
+        accuracy = (all_preds == all_labels).mean()
 
         print(f"\n[CNN] Test Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)\n")
         if class_names:
-            print(classification_report(all_labels, all_preds, target_names=class_names))
+            print(classification_report(all_labels,
+                  all_preds, target_names=class_names))
 
         cm = confusion_matrix(all_labels, all_preds)
         return accuracy, all_preds, all_labels, cm
@@ -221,13 +226,13 @@ class CNNTrainer:
 
         with torch.no_grad():
             for imgs, labels in tqdm(loader, desc="Extracting features", leave=False):
-                imgs     = imgs.to(self.device)
+                imgs = imgs.to(self.device)
                 _, feats = self.model(imgs, return_features=True)
                 all_features.append(feats.cpu().numpy())
                 all_labels.extend(labels.numpy())
 
         features = np.concatenate(all_features, axis=0)
-        labels   = np.array(all_labels)
+        labels = np.array(all_labels)
 
         # Save for reuse
         save_dir = self.cfg["paths"]["data_processed"]
@@ -235,5 +240,6 @@ class CNNTrainer:
         np.save(os.path.join(save_dir, "biomarker_features.npy"), features)
         np.save(os.path.join(save_dir, "biomarker_labels.npy"),   labels)
 
-        print(f"[CNN] Extracted features: {features.shape}  →  saved to {save_dir}")
+        print(
+            f"[CNN] Extracted features: {features.shape}  →  saved to {save_dir}")
         return features, labels

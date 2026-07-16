@@ -29,7 +29,8 @@ class FIDCalculator:
     """
 
     def __init__(self, device=None):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or (
+            "cuda" if torch.cuda.is_available() else "cpu")
         # Load Inception v3 for feature extraction
         self.model = inception_v3(weights=Inception_V3_Weights.IMAGENET1K_V1)
         self.model.fc = nn.Identity()   # Remove final classifier
@@ -47,9 +48,11 @@ class FIDCalculator:
         n = len(images_np)
 
         for start in range(0, n, batch_size):
-            batch = torch.tensor(images_np[start:start + batch_size], dtype=torch.float32)
+            batch = torch.tensor(
+                images_np[start:start + batch_size], dtype=torch.float32)
             # Inception expects (B, 3, 299, 299)
-            batch = F.interpolate(batch, size=(299, 299), mode="bilinear", align_corners=False)
+            batch = F.interpolate(batch, size=(299, 299),
+                                  mode="bilinear", align_corners=False)
             # Denormalise [-1,1] → [0,1] → inception range
             batch = (batch + 1) / 2
             batch = batch.to(self.device)
@@ -64,7 +67,7 @@ class FIDCalculator:
 
     @staticmethod
     def _compute_statistics(activations: np.ndarray):
-        mu  = activations.mean(axis=0)
+        mu = activations.mean(axis=0)
         cov = np.cov(activations, rowvar=False)
         return mu, cov
 
@@ -74,7 +77,7 @@ class FIDCalculator:
         covmean, _ = linalg.sqrtm(cov1 @ cov2, disp=False)
 
         if not np.isfinite(covmean).all():
-            offset  = np.eye(cov1.shape[0]) * eps
+            offset = np.eye(cov1.shape[0]) * eps
             covmean = linalg.sqrtm((cov1 + offset) @ (cov2 + offset))
 
         if np.iscomplexobj(covmean):
@@ -89,7 +92,8 @@ class FIDCalculator:
         Both should be (N, 3, H, W) float32 in [-1, 1].
         Minimum 2048 images recommended for reliable FID.
         """
-        print(f"[FID] Computing activations for {len(real_images)} real + {len(fake_images)} synthetic images …")
+        print(
+            f"[FID] Computing activations for {len(real_images)} real + {len(fake_images)} synthetic images …")
         real_acts = self._get_activations(real_images)
         fake_acts = self._get_activations(fake_images)
 
@@ -97,7 +101,8 @@ class FIDCalculator:
         mu_f, cov_f = self._compute_statistics(fake_acts)
 
         fid = self._frechet_distance(mu_r, cov_r, mu_f, cov_f)
-        print(f"[FID] Score: {fid:.2f}  (lower is better; <50 is good for medical images)")
+        print(
+            f"[FID] Score: {fid:.2f}  (lower is better; <50 is good for medical images)")
         return fid
 
 
@@ -117,21 +122,23 @@ def compute_classification_metrics(
     results = {
         "accuracy":   accuracy_score(y_true, y_pred),
         "f1_macro":   f1_score(y_true, y_pred, average="macro",    zero_division=0),
-        "f1_weighted":f1_score(y_true, y_pred, average="weighted", zero_division=0),
+        "f1_weighted": f1_score(y_true, y_pred, average="weighted", zero_division=0),
         "f1_per_class": f1_score(y_true, y_pred, average=None,     zero_division=0).tolist()
     }
 
     if y_proba is not None:
         try:
-            results["auc_roc"] = roc_auc_score(y_true, y_proba, multi_class="ovr", average="macro")
-            results["auc_pr"]  = average_precision_score(
+            results["auc_roc"] = roc_auc_score(
+                y_true, y_proba, multi_class="ovr", average="macro")
+            results["auc_pr"] = average_precision_score(
                 np.eye(y_proba.shape[1])[y_true], y_proba, average="macro"
             )
         except Exception:
             pass
 
     # Print summary
-    print(f"\n[Metrics] Accuracy:     {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%)")
+    print(
+        f"\n[Metrics] Accuracy:     {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%)")
     print(f"[Metrics] F1 Macro:     {results['f1_macro']:.4f}")
     print(f"[Metrics] F1 Weighted:  {results['f1_weighted']:.4f}")
     if "auc_roc" in results:
@@ -155,10 +162,11 @@ def compute_correlation_summary(results: dict) -> dict:
     """
     summary = {}
     for class_name, df in results.items():
-        sig_hits  = df["significant"].sum() if "significant" in df.columns else 0
-        mean_corr = df["abs_corr"].mean()   if "abs_corr"    in df.columns else 0
-        max_corr  = df["abs_corr"].max()    if "abs_corr"    in df.columns else 0
-        top_drug  = df.iloc[0]["name"]      if len(df) > 0 else "N/A"
+        sig_hits = df["significant"].sum(
+        ) if "significant" in df.columns else 0
+        mean_corr = df["abs_corr"].mean() if "abs_corr" in df.columns else 0
+        max_corr = df["abs_corr"].max() if "abs_corr" in df.columns else 0
+        top_drug = df.iloc[0]["name"] if len(df) > 0 else "N/A"
 
         summary[class_name] = {
             "mean_abs_corr":  round(float(mean_corr), 4),
@@ -169,8 +177,8 @@ def compute_correlation_summary(results: dict) -> dict:
 
     # Overall stats
     all_mean = np.mean([v["mean_abs_corr"] for v in summary.values()])
-    all_max  = np.max([v["max_abs_corr"]   for v in summary.values()])
-    total_sig = sum(v["significant_hits"]  for v in summary.values())
+    all_max = np.max([v["max_abs_corr"] for v in summary.values()])
+    total_sig = sum(v["significant_hits"] for v in summary.values())
 
     print(f"\n[Correlation] Mean |r| across all classes: {all_mean:.4f}")
     print(f"[Correlation] Max  |r| observed:           {all_max:.4f}")
@@ -194,17 +202,17 @@ def check_gan_health(history: dict) -> dict:
     d_losses = np.array(history["d_loss"])
 
     # Mode collapse: G loss increases sharply while D loss drops near 0
-    d_min      = d_losses.min()
+    d_min = d_losses.min()
     g_variance = g_losses[-10:].std() if len(g_losses) >= 10 else g_losses.std()
 
-    mode_collapse_risk = "HIGH"   if d_min < 0.05 else \
+    mode_collapse_risk = "HIGH" if d_min < 0.05 else \
                          "MEDIUM" if d_min < 0.15 else "LOW"
 
     # Convergence: G and D losses stabilising in last 20% of training
     last_20pct = max(1, len(g_losses) // 5)
-    g_stable   = g_losses[-last_20pct:].std() < 0.1
-    d_stable   = d_losses[-last_20pct:].std() < 0.1
-    converged  = g_stable and d_stable
+    g_stable = g_losses[-last_20pct:].std() < 0.1
+    d_stable = d_losses[-last_20pct:].std() < 0.1
+    converged = g_stable and d_stable
 
     health = {
         "mode_collapse_risk": mode_collapse_risk,
@@ -216,5 +224,6 @@ def check_gan_health(history: dict) -> dict:
 
     print(f"\n[GAN Health] Mode Collapse Risk: {mode_collapse_risk}")
     print(f"[GAN Health] Converged:          {converged}")
-    print(f"[GAN Health] Final G/D Loss:     {health['final_g_loss']} / {health['final_d_loss']}")
+    print(
+        f"[GAN Health] Final G/D Loss:     {health['final_g_loss']} / {health['final_d_loss']}")
     return health

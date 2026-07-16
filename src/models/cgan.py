@@ -109,9 +109,12 @@ class Discriminator(nn.Module):
 
     def forward(self, img, labels):
         # Tile label embedding as spatial map
-        label_map = self.label_emb(labels)                        # (B, img_size*img_size)
-        label_map = label_map.view(img.size(0), 1, self.img_size, self.img_size)
-        x = torch.cat([img, label_map], dim=1)                    # (B, 4, 64, 64)
+        # (B, img_size*img_size)
+        label_map = self.label_emb(labels)
+        label_map = label_map.view(
+            img.size(0), 1, self.img_size, self.img_size)
+        # (B, 4, 64, 64)
+        x = torch.cat([img, label_map], dim=1)
         return self.model(x).view(-1)
 
 
@@ -127,32 +130,37 @@ class CGANTrainer:
 
     def __init__(self, config, device=None):
         self.cfg = config
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or (
+            "cuda" if torch.cuda.is_available() else "cpu")
         print(f"[cGAN] Using device: {self.device}")
 
         gc = config["gan"]
         dc = config["data"]
 
-        self.latent_dim  = gc["latent_dim"]
+        self.latent_dim = gc["latent_dim"]
         self.num_classes = dc["num_classes"]
-        self.img_size    = dc["image_size"]
-        self.epochs      = gc["num_epochs"]
-        self.smooth      = gc["label_smoothing"]
+        self.img_size = dc["image_size"]
+        self.epochs = gc["num_epochs"]
+        self.smooth = gc["label_smoothing"]
 
         # Models
-        self.G = Generator(self.latent_dim, self.num_classes, 3, self.img_size).to(self.device)
-        self.D = Discriminator(self.num_classes, 3, self.img_size).to(self.device)
+        self.G = Generator(self.latent_dim, self.num_classes,
+                           3, self.img_size).to(self.device)
+        self.D = Discriminator(self.num_classes, 3,
+                               self.img_size).to(self.device)
 
         # Weight initialisation (DCGAN-style)
         self.G.apply(self._weights_init)
         self.D.apply(self._weights_init)
 
         # Optimizers
-        self.opt_G = optim.Adam(self.G.parameters(), lr=gc["lr_generator"],     betas=(gc["beta1"], gc["beta2"]))
-        self.opt_D = optim.Adam(self.D.parameters(), lr=gc["lr_discriminator"], betas=(gc["beta1"], gc["beta2"]))
+        self.opt_G = optim.Adam(self.G.parameters(
+        ), lr=gc["lr_generator"],     betas=(gc["beta1"], gc["beta2"]))
+        self.opt_D = optim.Adam(self.D.parameters(
+        ), lr=gc["lr_discriminator"], betas=(gc["beta1"], gc["beta2"]))
 
         self.criterion = nn.BCELoss()
-        self.history   = {"g_loss": [], "d_loss": []}
+        self.history = {"g_loss": [], "d_loss": []}
 
         os.makedirs(config["paths"]["models_gan"], exist_ok=True)
         os.makedirs(config["paths"]["data_synthetic"], exist_ok=True)
@@ -175,12 +183,13 @@ class CGANTrainer:
 
             for real_imgs, labels in tqdm(dataloader, desc=f"Epoch {epoch}/{self.epochs}", leave=False):
                 real_imgs = real_imgs.to(self.device)
-                labels    = labels.to(self.device)
+                labels = labels.to(self.device)
                 B = real_imgs.size(0)
 
                 # ── Train Discriminator ──────────────────────────
                 self.opt_D.zero_grad()
-                real_labels = torch.ones(B, device=self.device)  * (1 - self.smooth)
+                real_labels = torch.ones(
+                    B, device=self.device) * (1 - self.smooth)
                 fake_labels = torch.zeros(B, device=self.device) + self.smooth
 
                 # Real
@@ -188,10 +197,11 @@ class CGANTrainer:
                 loss_real = self.criterion(d_real, real_labels)
 
                 # Fake
-                z         = self._sample_z(B)
-                rand_lbls = torch.randint(0, self.num_classes, (B,), device=self.device)
+                z = self._sample_z(B)
+                rand_lbls = torch.randint(
+                    0, self.num_classes, (B,), device=self.device)
                 fake_imgs = self.G(z, rand_lbls).detach()
-                d_fake    = self.D(fake_imgs, rand_lbls)
+                d_fake = self.D(fake_imgs, rand_lbls)
                 loss_fake = self.criterion(d_fake, fake_labels)
 
                 d_loss = (loss_real + loss_fake) / 2
@@ -200,11 +210,13 @@ class CGANTrainer:
 
                 # ── Train Generator ──────────────────────────────
                 self.opt_G.zero_grad()
-                z         = self._sample_z(B)
-                rand_lbls = torch.randint(0, self.num_classes, (B,), device=self.device)
+                z = self._sample_z(B)
+                rand_lbls = torch.randint(
+                    0, self.num_classes, (B,), device=self.device)
                 fake_imgs = self.G(z, rand_lbls)
-                d_fake    = self.D(fake_imgs, rand_lbls)
-                g_loss    = self.criterion(d_fake, torch.ones(B, device=self.device))
+                d_fake = self.D(fake_imgs, rand_lbls)
+                g_loss = self.criterion(
+                    d_fake, torch.ones(B, device=self.device))
                 g_loss.backward()
                 self.opt_G.step()
 
@@ -215,7 +227,8 @@ class CGANTrainer:
             avg_d = np.mean(d_losses)
             self.history["g_loss"].append(avg_g)
             self.history["d_loss"].append(avg_d)
-            print(f"  Epoch {epoch:3d} | G Loss: {avg_g:.4f} | D Loss: {avg_d:.4f}")
+            print(
+                f"  Epoch {epoch:3d} | G Loss: {avg_g:.4f} | D Loss: {avg_d:.4f}")
 
             # Save checkpoint
             if epoch % self.cfg["gan"]["save_every"] == 0:
@@ -225,7 +238,8 @@ class CGANTrainer:
         return self.history
 
     def _save_checkpoint(self, epoch):
-        path = os.path.join(self.cfg["paths"]["models_gan"], f"checkpoint_epoch{epoch}.pt")
+        path = os.path.join(
+            self.cfg["paths"]["models_gan"], f"checkpoint_epoch{epoch}.pt")
         torch.save({
             "epoch": epoch,
             "G_state": self.G.state_dict(),
@@ -256,18 +270,22 @@ class CGANTrainer:
 
         with torch.no_grad():
             for cls_idx in range(self.num_classes):
-                z      = self._sample_z(per_class)
-                labels = torch.full((per_class,), cls_idx, dtype=torch.long, device=self.device)
-                imgs   = self.G(z, labels).cpu().numpy()   # (N, 3, H, W) in [-1, 1]
+                z = self._sample_z(per_class)
+                labels = torch.full((per_class,), cls_idx,
+                                    dtype=torch.long, device=self.device)
+                # (N, 3, H, W) in [-1, 1]
+                imgs = self.G(z, labels).cpu().numpy()
                 all_imgs.append(imgs)
                 all_labels.extend([cls_idx] * per_class)
 
-        all_imgs   = np.concatenate(all_imgs, axis=0).astype(np.float32)
+        all_imgs = np.concatenate(all_imgs, axis=0).astype(np.float32)
         all_labels = np.array(all_labels, dtype=np.int64)
 
         if save:
-            np.save(os.path.join(self.cfg["paths"]["data_synthetic"], "synthetic_images.npy"), all_imgs)
-            np.save(os.path.join(self.cfg["paths"]["data_synthetic"], "synthetic_labels.npy"), all_labels)
+            np.save(os.path.join(
+                self.cfg["paths"]["data_synthetic"], "synthetic_images.npy"), all_imgs)
+            np.save(os.path.join(
+                self.cfg["paths"]["data_synthetic"], "synthetic_labels.npy"), all_labels)
             print(f"[cGAN] Saved {len(all_imgs)} synthetic images.")
 
         self.G.train()
