@@ -186,7 +186,8 @@ def plot_tsne(features: np.ndarray, labels: np.ndarray,
     ax.grid(True, ls="--", lw=0.5, alpha=0.4)
     plt.tight_layout()
     if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    plt.show();  
+    plt.close()
 
 
 # ── 6. Drug Candidate Bar Chart ───────────────────────────────────────────────
@@ -303,4 +304,5 @@ def plot_molecule_structures(smiles_list: list, names: list, save_path=None):
     if save_path:
         img.save(save_path)
     else:
+        img.show()
         img.show()
