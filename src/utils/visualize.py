@@ -201,57 +201,106 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
     bars = ax.barh(df["name"], df["abs_corr"], color=colors,
                    edgecolor="none", height=0.6)
 
-    # Annotate with correlation value
+        # Annotate with correlation value
     for bar, (_, row) in zip(bars, df.iterrows()):
-        ax.text(bar.get_width() + 0.005, bar.get_y() + bar.get_height() / 2,
-                f"r={row['correlation']:+.3f}  [{row['target']}]",
-                va="center", fontsize=8.5, color="#e8edf2")
+        ax.text(
+            bar.get_width() + 0.005,
+            bar.get_y() + bar.get_height() / 2,
+            f"r={row['correlation']:+.3f} [{row['target']}]",
+            va="center",
+            fontsize=8.5,
+            color="#e8edf2",
+        )
 
     ax.set_xlim(0, df["abs_corr"].max() + 0.12)
     ax.set_title(
-        f"Top Drug Candidates — {class_name}", fontsize=13, color="#e8edf2", pad=12)
+        f"Top Drug Candidates - {class_name}",
+        fontsize=13,
+        color="#e8edf2",
+        pad=12,
+    )
     ax.set_xlabel("|Pearson Correlation|")
     ax.invert_yaxis()
     ax.grid(True, axis="x", ls="--", lw=0.5)
+
     plt.tight_layout()
-   if save_path:
 
-    plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
-   plt.show()
-   plt.close()
+    plt.show()
+    plt.close()
 
 
-# ──
+# ── 7. Multi-class Drug Heatmap ───────────────────────────────────────────────
 def plot_correlation_heatmap(summary_df, save_path=None):
     """Heatmap: drugs × disease classes coloured by |correlation|."""
+
     pivot = summary_df.pivot_table(
-        index="Drug", columns="Disease Class", values="Abs Corr", aggfunc="mean"
+        index="Drug",
+        columns="Disease Class",
+        values="Abs Corr",
+        aggfunc="mean",
     ).fillna(0)
 
     fig, ax = plt.subplots(figsize=(14, 8))
-    sns.heatmap(pivot, cmap="YlGnBu", ax=ax, linewidths=0.3,
-                linecolor="#1f2937", cbar_kws={"shrink": 0.7})
-    ax.set_title("Drug–Disease Biomarker Correlation Heatmap", fontsize=13, color="#e8edf2", pad=12)
+
+    sns.heatmap(
+        pivot,
+        cmap="YlGnBu",
+        ax=ax,
+        linewidths=0.3,
+        linecolor="#1f2937",
+        cbar_kws={"shrink": 0.7},
+    )
+
+    ax.set_title(
+        "Drug-Disease Biomarker Correlation Heatmap",
+        fontsize=13,
+        color="#e8edf2",
+        pad=12,
+    )
+
     ax.set_xlabel("Disease Class", fontsize=10)
-    ax.set_ylabel("Drug Compound",  fontsize=10)
+    ax.set_ylabel("Drug Compound", fontsize=10)
+
     plt.xticks(rotation=45, ha="right", fontsize=8)
-    plt.yticks(rotation=0,  fontsize=8)
+    plt.yticks(rotation=0, fontsize=8)
+
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+    plt.close()
 
 
-# ── 8. Molecular structure grid ───────────────────────────────────────────────
+# ── 8. Molecular Structure Grid ───────────────────────────────────────────────
 def plot_molecule_structures(smiles_list: list, names: list, save_path=None):
+    """Plot molecular structures using RDKit."""
+
     if not RDKIT_DRAW:
-        print("[Viz] RDKit Draw not available — skipping structure plot.")
+        print("[Viz] RDKit Draw not available - skipping structure plot.")
         return
 
-    mols = [Chem.MolFromSmiles(s) for s in smiles_list if Chem.MolFromSmiles(s)]
-    names_valid = [names[i] for i, s in enumerate(smiles_list) if Chem.MolFromSmiles(s)]
+    mols = []
+    legends = []
 
-    img = Draw.MolsToGridImage(mols[:12], molsPerRow=4, subImgSize=(300, 200),
-                               legends=names_valid[:12])
-    img.save(save_path) if save_path else img.show()
+    for smile, name in zip(smiles_list, names):
+        mol = Chem.MolFromSmiles(smile)
+        if mol is not None:
+            mols.append(mol)
+            legends.append(name)
+
+    img = Draw.MolsToGridImage(
+        mols[:12],
+        molsPerRow=4,
+        subImgSize=(300, 200),
+        legends=legends[:12],
+    )
+
+    if save_path:
+        img.save(save_path)
+    else:
+        img.show()
