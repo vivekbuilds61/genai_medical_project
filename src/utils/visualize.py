@@ -1,14 +1,4 @@
-"""
-visualize.py
-────────────
-All visualisation utilities for the pipeline:
-  - GAN training loss curves
-  - Synthetic image grids
-  - CNN training curves + confusion matrix
-  - Biomarker feature t-SNE / UMAP
-  - Drug candidate bar charts
-  - Molecular structure rendering
-"""
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,7 +41,6 @@ plt.rcParams.update({
 })
 
 
-# ── 1. GAN Loss Curves ────────────────────────────────────────────────────────
 def plot_gan_losses(history: dict, save_path=None):
     fig, ax = plt.subplots(figsize=(10, 4))
     epochs = range(1, len(history["g_loss"]) + 1)
@@ -208,7 +197,7 @@ plt.show()
 plt.close()
 
 
-# ── 7. Multi-class drug heatmap ───────────────────────────────────────────────
+# ──
 def plot_correlation_heatmap(summary_df, save_path=None):
     """Heatmap: drugs × disease classes coloured by |correlation|."""
     pivot = summary_df.pivot_table(
