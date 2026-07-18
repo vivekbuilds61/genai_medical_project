@@ -12,7 +12,6 @@ All visualisation utilities for the pipeline:
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import seaborn as sns
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
@@ -39,19 +38,19 @@ PALETTE = ["#00e5a0", "#0099ff", "#ff6b35", "#a855f7",
 
 plt.rcParams.update({
     "figure.facecolor": "#0d1117",
-    "axes.facecolor":   "#111820",
-    "axes.edgecolor":   "#2d3748",
-    "axes.labelcolor":  "#8b99a8",
-    "xtick.color":      "#8b99a8",
-    "ytick.color":      "#8b99a8",
-    "text.color":       "#e8edf2",
-    "grid.color":       "#1f2937",
-    "grid.alpha":       0.5,
-    "font.family":      "monospace",
+    "axes.facecolor": "#111820",
+    "axes.edgecolor": "#2d3748",
+    "axes.labelcolor": "#8b99a8",
+    "xtick.color": "#8b99a8",
+    "ytick.color": "#8b99a8",
+    "text.color": "#e8edf2",
+    "grid.color": "#1f2937",
+    "grid.alpha": 0.5,
+    "font.family": "monospace",
 })
 
 
-# ── 1. GAN Loss Curves ────────────────────────────────────────────────────────
+# ── 1. GAN Loss Curves ──────────────────────────────────────────────
 def plot_gan_losses(history: dict, save_path=None):
     fig, ax = plt.subplots(figsize=(10, 4))
     epochs = range(1, len(history["g_loss"]) + 1)
@@ -62,15 +61,18 @@ def plot_gan_losses(history: dict, save_path=None):
     ax.fill_between(epochs, history["g_loss"], alpha=0.08, color=PALETTE[0])
     ax.fill_between(epochs, history["d_loss"], alpha=0.08, color=PALETTE[1])
     ax.set_title("cGAN Training Loss", fontsize=14, color="#e8edf2", pad=12)
-    ax.set_xlabel("Epoch");  ax.set_ylabel("Loss")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
     ax.legend(framealpha=0.2)
     ax.grid(True, ls="--", lw=0.5)
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.show()
+    plt.close()
 
 
-# ── 2. Synthetic Image Grid ───────────────────────────────────────────────────
+# ── 2. Synthetic Image Grid ─────────────────────────────────────────
 def plot_synthetic_grid(images: np.ndarray, labels: np.ndarray,
                         n_per_class=4, save_path=None):
     """
@@ -93,15 +95,19 @@ def plot_synthetic_grid(images: np.ndarray, labels: np.ndarray,
             ax.imshow(img_disp)
             ax.axis("off")
             if col == 0:
-                ax.set_ylabel(PATHMNIST_CLASSES[cls_idx] if cls_idx < len(PATHMNIST_CLASSES) else str(cls_idx),
-                              fontsize=7, color="#e8edf2", rotation=0, labelpad=80, va="center")
+                label = (PATHMNIST_CLASSES[cls_idx]
+                         if cls_idx < len(PATHMNIST_CLASSES) else str(cls_idx))
+                ax.set_ylabel(label, fontsize=7, color="#e8edf2",
+                              rotation=0, labelpad=80, va="center")
 
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.show()
+    plt.close()
 
 
-# ── 3. CNN Training Curves ────────────────────────────────────────────────────
+# ── 3. CNN Training Curves ──────────────────────────────────────────
 def plot_cnn_training(history: dict, save_path=None):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -113,8 +119,10 @@ def plot_cnn_training(history: dict, save_path=None):
     ax1.plot(epochs, history["val_loss"],
              color=PALETTE[1], lw=2, label="Val", ls="--")
     ax1.set_title("Loss", fontsize=12, color="#e8edf2")
-    ax1.set_xlabel("Epoch");  ax1.set_ylabel("Cross-Entropy Loss")
-    ax1.legend(framealpha=0.2);  ax1.grid(True, ls="--", lw=0.5)
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Cross-Entropy Loss")
+    ax1.legend(framealpha=0.2)
+    ax1.grid(True, ls="--", lw=0.5)
 
     # Accuracy
     ax2.plot(epochs, [a * 100 for a in history["train_acc"]],
@@ -122,17 +130,21 @@ def plot_cnn_training(history: dict, save_path=None):
     ax2.plot(epochs, [a * 100 for a in history["val_acc"]],
              color=PALETTE[1], lw=2, label="Val", ls="--")
     ax2.set_title("Accuracy", fontsize=12, color="#e8edf2")
-    ax2.set_xlabel("Epoch");  ax2.set_ylabel("Accuracy (%)")
-    ax2.legend(framealpha=0.2);  ax2.grid(True, ls="--", lw=0.5)
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Accuracy (%)")
+    ax2.legend(framealpha=0.2)
+    ax2.grid(True, ls="--", lw=0.5)
 
     fig.suptitle("CNN Classifier Training Curves",
                  fontsize=13, color="#e8edf2")
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.show()
+    plt.close()
 
 
-# ── 4. Confusion Matrix ───────────────────────────────────────────────────────
+# ── 4. Confusion Matrix ─────────────────────────────────────────────
 def plot_confusion_matrix(cm: np.ndarray, class_names=None, save_path=None):
     if class_names is None:
         class_names = PATHMNIST_CLASSES
@@ -146,17 +158,19 @@ def plot_confusion_matrix(cm: np.ndarray, class_names=None, save_path=None):
                 ax=ax, linewidths=0.5, linecolor="#1f2937",
                 cbar_kws={"shrink": 0.8})
     ax.set_xlabel("Predicted Label", fontsize=11)
-    ax.set_ylabel("True Label",      fontsize=11)
+    ax.set_ylabel("True Label", fontsize=11)
     ax.set_title("CNN Confusion Matrix (Normalised)",
                  fontsize=13, color="#e8edf2", pad=12)
     plt.xticks(rotation=45, ha="right", fontsize=8)
-    plt.yticks(rotation=0,  fontsize=8)
+    plt.yticks(rotation=0, fontsize=8)
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  plt.close()
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.show()
+    plt.close()
 
 
-# ── 5. Feature t-SNE ─────────────────────────────────────────────────────────
+# ── 5. Feature t-SNE ────────────────────────────────────────────────
 def plot_tsne(features: np.ndarray, labels: np.ndarray,
               title="Biomarker Feature Space (t-SNE)", save_path=None):
     print("[Viz] Running t-SNE (this may take ~30s) …")
@@ -173,8 +187,8 @@ def plot_tsne(features: np.ndarray, labels: np.ndarray,
     fig, ax = plt.subplots(figsize=(10, 8))
     for cls_idx in np.unique(labels):
         mask = labels == cls_idx
-        label_name = PATHMNIST_CLASSES[cls_idx] if cls_idx < len(
-            PATHMNIST_CLASSES) else str(cls_idx)
+        label_name = (PATHMNIST_CLASSES[cls_idx]
+                      if cls_idx < len(PATHMNIST_CLASSES) else str(cls_idx))
         ax.scatter(emb[mask, 0], emb[mask, 1],
                    c=PALETTE[cls_idx % len(PALETTE)],
                    label=label_name, alpha=0.6, s=18, edgecolors="none")
@@ -182,15 +196,17 @@ def plot_tsne(features: np.ndarray, labels: np.ndarray,
     ax.set_title(title, fontsize=13, color="#e8edf2", pad=12)
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8,
               framealpha=0.2, markerscale=1.5)
-    ax.set_xlabel("t-SNE 1");  ax.set_ylabel("t-SNE 2")
+    ax.set_xlabel("t-SNE 1")
+    ax.set_ylabel("t-SNE 2")
     ax.grid(True, ls="--", lw=0.5, alpha=0.4)
     plt.tight_layout()
-    if save_path: plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.show();  
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.show()
     plt.close()
 
 
-# ── 6. Drug Candidate Bar Chart ───────────────────────────────────────────────
+# ── 6. Drug Candidate Bar Chart ─────────────────────────────────────
 def plot_drug_candidates(results: dict, class_name: str, save_path=None):
     df = results.get(class_name)
     if df is None or len(df) == 0:
@@ -202,7 +218,7 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
     bars = ax.barh(df["name"], df["abs_corr"], color=colors,
                    edgecolor="none", height=0.6)
 
-        # Annotate with correlation value
+    # Annotate with correlation value
     for bar, (_, row) in zip(bars, df.iterrows()):
         ax.text(
             bar.get_width() + 0.005,
@@ -233,9 +249,9 @@ def plot_drug_candidates(results: dict, class_name: str, save_path=None):
     plt.close()
 
 
-# ── 7. Multi-class Drug Heatmap ───────────────────────────────────────────────
+# ── 7. Multi-class Drug Heatmap ─────────────────────────────────────
 def plot_correlation_heatmap(summary_df, save_path=None):
-    """Heatmap: drugs × disease classes coloured by |correlation|."""
+    """Heatmap: drugs x disease classes coloured by |correlation|."""
 
     pivot = summary_df.pivot_table(
         index="Drug",
@@ -277,7 +293,7 @@ def plot_correlation_heatmap(summary_df, save_path=None):
     plt.close()
 
 
-# ── 8. Molecular Structure Grid ───────────────────────────────────────────────
+# ── 8. Molecular Structure Grid ─────────────────────────────────────
 def plot_molecule_structures(smiles_list: list, names: list, save_path=None):
     """Plot molecular structures using RDKit."""
 
@@ -304,5 +320,4 @@ def plot_molecule_structures(smiles_list: list, names: list, save_path=None):
     if save_path:
         img.save(save_path)
     else:
-        img.show()
         img.show()
